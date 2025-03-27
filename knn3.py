@@ -1,43 +1,47 @@
-from flask import Flask, request, jsonify, render_template
-import numpy as np
+from flask import Flask, render_template, request, jsonify
 import pandas as pd
-import joblib
+import numpy as np
+from knn2 import KNN, class_mapping, normalize, X, df  # Import your model
 
 app = Flask(__name__)
 
-# Load trained model
-knn, X_min, X_max, class_mapping = joblib.load("knn_model.pkl")
+# Load trained KNN model
+knn = KNN(k=3)  # Ensure your model is trained before using it
+knn.fit(X.values, df['class_type'].values)
 
-# Load dataset for reference
-zoo_file = "zoo.csv"
-df = pd.read_csv(zoo_file)
-
-@app.route('/')
-def index():
+@app.route("/")
+def home():
     return render_template("index.html")
 
-@app.route('/predict', methods=['POST'])
+@app.route("/predict", methods=["POST"])
 def predict():
-    data = request.json  # JSON input from frontend
+    data = request.get_json()
     animal_name = data.get("animal_name", "").strip().lower()
+    features_input = data.get("features", "").strip()
 
-    # Check if the animal exists in the dataset
-    animal_row = df[df["animal_names"].str.lower() == animal_name]
-
-    if not animal_row.empty:
-        X_input = animal_row.drop(columns=["animal_names", "class_type"]).values
+    if animal_name:
+        # Find the animal in the dataset
+        animal_row = df[df['animal_names'].str.lower() == animal_name]
+        if not animal_row.empty:
+            X_input = animal_row.drop(columns=['animal_names', 'class_type']).values
+        else:
+            return jsonify({"prediction": "Animal not found. Try entering manually."})
+    elif features_input:
+        try:
+            X_input = np.array([float(x) for x in features_input.split(",")]).reshape(1, -1)
+        except ValueError:
+            return jsonify({"prediction": "Invalid feature values. Enter numbers separated by commas."})
     else:
-        # If not found, use input features from frontend
-        X_input = np.array([data["features"]])
+        return jsonify({"prediction": "No input provided. Please enter an animal name or feature values."})
 
-    # Normalize input
-    X_input = (X_input - X_min.values) / (X_max.values - X_min.values)
+    # Normalize the input features
+    X_input = (X_input - X.min().values) / (X.max().values - X.min().values)
 
-    # Get prediction
+    # Make the prediction
     prediction = knn.predict(X_input)[0]
     species = class_mapping.get(prediction, "Unknown")
 
-    return jsonify({"prediction": species, "class_number": int(prediction)})
+    return jsonify({"prediction": species})
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    app.run(debug=False)

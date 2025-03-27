@@ -4,34 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Animal Class Prediction</title>
-</head>
-<body>
-    <h2>Animal Class Prediction</h2>
-
-    <label for="animal_name">Enter Animal Name:</label>
-    <input type="text" id="animal_name" placeholder="Enter name or leave blank">
-
-    <h3>Or Enter Feature Values Manually:</h3>
-    <div id="feature_inputs">
-        <!-- Dynamic input fields -->
-    </div>
-
-    <button onclick="predictAnimal()">Predict</button>
-    
-    <h3>Prediction:</h3>
-    <p id="prediction_result"></p>
-
     <script>
-        function predictAnimal() {
-            let animalName = document.getElementById("animal_name").value;
-            let features = [];
-
-            let inputs = document.querySelectorAll("#feature_inputs input");
-            inputs.forEach(input => {
-                features.push(parseFloat(input.value) || 0);
-            });
-
-            let data = { animal_name: animalName, features: features };
+        function predict() {
+            const animalName = document.getElementById("animal_name").value.trim().toLowerCase();
+            let data = { animal_name: animalName };
 
             fetch("/predict", {
                 method: "POST",
@@ -39,12 +15,80 @@
                 body: JSON.stringify(data)
             })
             .then(response => response.json())
-            .then(data => {
-                document.getElementById("prediction_result").innerText = 
-                    `Predicted Class: ${data.prediction} (Class ${data.class_number})`;
+            .then(result => {
+                if (result.prediction === "Animal not found. Try entering manually.") {
+                    document.getElementById("manual_input").style.display = "block";
+                    document.getElementById("prediction").innerText = result.prediction;
+                } else {
+                    document.getElementById("prediction").innerText = "Predicted Class: " + result.prediction;
+                }
+            });
+        }
+
+        function manualPredict() {
+            const features = [
+                "hair", "feathers", "eggs", "milk", "airborne", "aquatic",
+                "predator", "toothed", "backbone", "breathes", "venomous",
+                "fins", "legs", "tail", "domestic", "catsize"
+            ];
+            
+            let featureValues = [];
+            for (let feature of features) {
+                let value = document.getElementById(feature).value;
+                if (value !== "0" && value !== "1") {
+                    alert("Invalid value for " + feature + ". Enter 0 or 1.");
+                    return;
+                }
+                featureValues.push(value);
+            }
+
+            let data = { features: featureValues.join(",") };
+
+            fetch("/predict", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
             })
-            .catch(error => console.error("Error:", error));
+            .then(response => response.json())
+            .then(result => {
+                document.getElementById("prediction").innerText = "Predicted Class: " + result.prediction;
+            });
         }
     </script>
+</head>
+<body>
+    <h1>Animal Class Prediction</h1>
+
+    <!-- Animal Name Input -->
+    <label>Enter Animal Name:</label>
+    <input type="text" id="animal_name">
+    <button onclick="predict()">Predict</button>
+
+    <!-- Display Prediction -->
+    <h3>Prediction:</h3>
+    <p id="prediction"></p>
+
+    <!-- Manual Feature Input (Initially Hidden) -->
+    <div id="manual_input" style="display: none;">
+        <h3>Enter Feature Values Manually:</h3>
+        <label>Hair (0 or 1):</label> <input type="text" id="hair"><br>
+        <label>Feathers (0 or 1):</label> <input type="text" id="feathers"><br>
+        <label>Eggs (0 or 1):</label> <input type="text" id="eggs"><br>
+        <label>Milk (0 or 1):</label> <input type="text" id="milk"><br>
+        <label>Airborne (0 or 1):</label> <input type="text" id="airborne"><br>
+        <label>Aquatic (0 or 1):</label> <input type="text" id="aquatic"><br>
+        <label>Predator (0 or 1):</label> <input type="text" id="predator"><br>
+        <label>Toothed (0 or 1):</label> <input type="text" id="toothed"><br>
+        <label>Backbone (0 or 1):</label> <input type="text" id="backbone"><br>
+        <label>Breathes (0 or 1):</label> <input type="text" id="breathes"><br>
+        <label>Venomous (0 or 1):</label> <input type="text" id="venomous"><br>
+        <label>Fins (0 or 1):</label> <input type="text" id="fins"><br>
+        <label>Legs (0 or 1):</label> <input type="text" id="legs"><br>
+        <label>Tail (0 or 1):</label> <input type="text" id="tail"><br>
+        <label>Domestic (0 or 1):</label> <input type="text" id="domestic"><br>
+        <label>Cat Size (0 or 1):</label> <input type="text" id="catsize"><br>
+        
+        <button onclick="manualPredict()">Submit Features</button>
+    </div>
 </body>
 </html>
