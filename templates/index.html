@@ -3,92 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Animal Class Prediction</title>
-    <script>
-        function predict() {
-            const animalName = document.getElementById("animal_name").value.trim().toLowerCase();
-            let data = { animal_name: animalName };
-
-            fetch("/predict", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.prediction === "Animal not found. Try entering manually.") {
-                    document.getElementById("manual_input").style.display = "block";
-                    document.getElementById("prediction").innerText = result.prediction;
-                } else {
-                    document.getElementById("prediction").innerText = "Predicted Class: " + result.prediction;
-                }
-            });
-        }
-
-        function manualPredict() {
-            const features = [
-                "hair", "feathers", "eggs", "milk", "airborne", "aquatic",
-                "predator", "toothed", "backbone", "breathes", "venomous",
-                "fins", "legs", "tail", "domestic", "catsize"
-            ];
-            
-            let featureValues = [];
-            for (let feature of features) {
-                let value = document.getElementById(feature).value;
-                if (value !== "0" && value !== "1") {
-                    alert("Invalid value for " + feature + ". Enter 0 or 1.");
-                    return;
-                }
-                featureValues.push(value);
-            }
-
-            let data = { features: featureValues.join(",") };
-
-            fetch("/predict", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(result => {
-                document.getElementById("prediction").innerText = "Predicted Class: " + result.prediction;
-            });
-        }
-    </script>
+    <title>Animal Class Predictor</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body>
-    <h1>Animal Class Prediction</h1>
+<body class="bg-green-100 flex items-center justify-center min-h-screen">
+    <div class="w-full max-w-lg bg-white shadow-xl rounded-lg p-6 border-2 border-green-400">
+        <h1 class="text-3xl font-bold text-center text-green-700">🐾 Animal Class Predictor 🦁</h1>
 
-    <!-- Animal Name Input -->
-    <label>Enter Animal Name:</label>
-    <input type="text" id="animal_name">
-    <button onclick="predict()">Predict</button>
+        <div class="mt-4 grid grid-cols-2 gap-4">
+            <label class="block text-sm font-medium text-gray-700">Hair:</label>
+            <select id="hair" class="p-2 border border-green-500 rounded-md">
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
 
-    <!-- Display Prediction -->
-    <h3>Prediction:</h3>
-    <p id="prediction"></p>
+            <label class="block text-sm font-medium text-gray-700">Feathers:</label>
+            <select id="feathers" class="p-2 border border-green-500 rounded-md">
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
 
-    <!-- Manual Feature Input (Initially Hidden) -->
-    <div id="manual_input" style="display: none;">
-        <h3>Enter Feature Values Manually:</h3>
-        <label>Hair (0 or 1):</label> <input type="text" id="hair"><br>
-        <label>Feathers (0 or 1):</label> <input type="text" id="feathers"><br>
-        <label>Eggs (0 or 1):</label> <input type="text" id="eggs"><br>
-        <label>Milk (0 or 1):</label> <input type="text" id="milk"><br>
-        <label>Airborne (0 or 1):</label> <input type="text" id="airborne"><br>
-        <label>Aquatic (0 or 1):</label> <input type="text" id="aquatic"><br>
-        <label>Predator (0 or 1):</label> <input type="text" id="predator"><br>
-        <label>Toothed (0 or 1):</label> <input type="text" id="toothed"><br>
-        <label>Backbone (0 or 1):</label> <input type="text" id="backbone"><br>
-        <label>Breathes (0 or 1):</label> <input type="text" id="breathes"><br>
-        <label>Venomous (0 or 1):</label> <input type="text" id="venomous"><br>
-        <label>Fins (0 or 1):</label> <input type="text" id="fins"><br>
-        <label>Legs (0 or 1):</label> <input type="text" id="legs"><br>
-        <label>Tail (0 or 1):</label> <input type="text" id="tail"><br>
-        <label>Domestic (0 or 1):</label> <input type="text" id="domestic"><br>
-        <label>Cat Size (0 or 1):</label> <input type="text" id="catsize"><br>
-        
-        <button onclick="manualPredict()">Submit Features</button>
+            <label class="block text-sm font-medium text-gray-700">Eggs:</label>
+            <select id="eggs" class="p-2 border border-green-500 rounded-md">
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+
+            <label class="block text-sm font-medium text-gray-700">Milk:</label>
+            <select id="milk" class="p-2 border border-green-500 rounded-md">
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+
+            <label class="block text-sm font-medium text-gray-700">Airborne:</label>
+            <select id="airborne" class="p-2 border border-green-500 rounded-md">
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+
+            <label class="block text-sm font-medium text-gray-700">Aquatic:</label>
+            <select id="aquatic" class="p-2 border border-green-500 rounded-md">
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+
+            <label class="block text-sm font-medium text-gray-700">Predator:</label>
+            <select id="predator" class="p-2 border border-green-500 rounded-md">
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+
+            <label class="block text-sm font-medium text-gray-700">Toothed:</label>
+            <select id="toothed" class="p-2 border border-green-500 rounded-md">
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+
+            <label class="block text-sm font-medium text-gray-700">Backbone:</label>
+            <select id="backbone" class="p-2 border border-green-500 rounded-md">
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+
+            <label class="block text-sm font-medium text-gray-700">Breathes:</label>
+            <select id="breathes" class="p-2 border border-green-500 rounded-md">
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+
+            <label class="block text-sm font-medium text-gray-700">Venomous:</label>
+            <select id="venomous" class="p-2 border border-green-500 rounded-md">
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+
+            <label class="block text-sm font-medium text-gray-700">Fins:</label>
+            <select id="fins" class="p-2 border border-green-500 rounded-md">
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+
+            <label class="block text-sm font-medium text-gray-700">Legs:</label>
+            <input type="number" id="legs" value="4" class="p-2 border border-green-500 rounded-md">
+
+            <label class="block text-sm font-medium text-gray-700">Tail:</label>
+            <select id="tail" class="p-2 border border-green-500 rounded-md">
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+
+            <label class="block text-sm font-medium text-gray-700">Domestic:</label>
+            <select id="domestic" class="p-2 border border-green-500 rounded-md">
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+
+            <label class="block text-sm font-medium text-gray-700">Cat Size:</label>
+            <select id="catsize" class="p-2 border border-green-500 rounded-md">
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+        </div>
+
+        <button id="predictBtn" class="mt-4 w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105">
+            🐾 Predict Class
+        </button>
+
+        <div id="predictionResult" class="mt-6 text-center text-xl font-semibold text-green-800"></div>
     </div>
 </body>
 </html>
