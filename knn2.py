@@ -7,8 +7,9 @@ def load_data(file_path):
     return pd.read_csv(file_path)
 
 # Normalize dataset (Min-Max Scaling)
-def normalize(X):
-    return (X - X.min()) / (X.max() - X.min())
+def normalize(df_input):
+    return (df_input - X.min()) / (X.max() - X.min())
+
 
 # Euclidean distance
 def euclidean_distance(x1, x2):
