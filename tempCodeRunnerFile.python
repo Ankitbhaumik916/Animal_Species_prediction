@@ -1,0 +1,198 @@
+import pygame
+import random
+import math
+import sys
+
+pygame.init()
+WIDTH, HEIGHT = 400, 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+clock = pygame.time.Clock()
+FONT = pygame.font.SysFont("Arial", 28)
+
+# Pipe mechanics
+PIPE_WIDTH = 60
+pipe_x = WIDTH - 100
+pipe_gap_max = 160
+pipe_gap_min = 0
+pipe_gap = pipe_gap_max
+pipe_center_y = HEIGHT // 2
+slam_state = "idle"
+slam_timer = 0
+slam_speed = 15
+
+# Bird types
+BIRD_TYPES = [
+    {"color": (255, 255, 255), "radius": 15, "speed": 5, "score": 1},
+    {"color": (255, 200, 0),   "radius": 20, "speed": 7, "score": 2},
+    {"color": (150, 75, 0),    "radius": 10, "speed": 10, "score": 3},
+]
+
+# Blood particles
+particles = []
+
+# Birds
+birds = []
+bird_spawn_rate = 80
+frame_count = 0
+
+# Score and game state
+score = 0
+game_over = False
+
+def reset_game():
+    global birds, score, game_over, slam_timer, slam_state, pipe_gap, particles
+    birds = []
+    particles = []
+    score = 0
+    game_over = False
+    slam_timer = 0
+    slam_state = "idle"
+    pipe_gap = pipe_gap_max
+
+def add_bird():
+    btype = random.choice(BIRD_TYPES)
+    base_y = pipe_center_y
+    birds.append({
+        "x": -30,
+        "y": base_y,
+        "base_y": base_y,
+        "wave_offset": random.uniform(0, math.pi * 2),
+        "flap_freq": random.uniform(0.8, 1.2),
+        "alive": True,
+        "squished": False,
+        "squish_timer": 0,
+        "color": btype["color"],
+        "radius": btype["radius"],
+        "speed": btype["speed"],
+        "score": btype["score"],
+        "vy": 0,
+        "gravity": 0.3,
+        "flap_strength": -3,
+        "flap_timer": random.randint(30, 60)
+    })
+
+def spawn_blood(x, y, color):
+    for _ in range(10):
+        particles.append({
+            "x": x,
+            "y": y,
+            "vx": random.uniform(-2, 2),
+            "vy": random.uniform(-2, 2),
+            "life": 20,
+            "color": color
+        })
+
+def draw_flappy_pipe(x, top_height, bottom_y):
+    pygame.draw.rect(screen, (0, 150, 0), (x, 0, PIPE_WIDTH, top_height))
+    pygame.draw.rect(screen, (0, 150, 0), (x, bottom_y, PIPE_WIDTH, HEIGHT - bottom_y))
+
+running = True
+while running:
+    screen.fill((135, 206, 235))
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if game_over and event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+            reset_game()
+        if not game_over and event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+            if slam_state == 'idle':
+                slam_state = 'closing'
+
+    if not game_over:
+        frame_count += 1
+        if frame_count % bird_spawn_rate == 0:
+            add_bird()
+
+        # Pipe slam animation
+        if slam_state == 'closing':
+            pipe_gap = max(pipe_gap_min, pipe_gap - slam_speed)
+            if pipe_gap <= pipe_gap_min:
+                slam_state = 'closed'
+                slam_timer = 10
+        elif slam_state == 'closed':
+            slam_timer -= 1
+            if slam_timer <= 0:
+                slam_state = 'opening'
+        elif slam_state == 'opening':
+            pipe_gap = min(pipe_gap_max, pipe_gap + slam_speed)
+            if pipe_gap >= pipe_gap_max:
+                slam_state = 'idle'
+
+        # Move and animate birds
+        for bird in birds:
+            if bird['alive'] and not bird['squished']:
+                bird['x'] += bird['speed']
+
+                # Gravity and flap logic
+                bird["flap_timer"] -= 1
+                if bird["flap_timer"] <= 0:
+                    bird["vy"] += bird["flap_strength"]
+                    bird["flap_timer"] = random.randint(30, 60)
+
+                bird["vy"] += bird["gravity"]
+                bird["vy"] = max(min(bird["vy"], 3), -3)
+                bird["y"] += bird["vy"]
+
+                # Gentle bobbing
+                bob = math.sin((frame_count / (5 * bird["flap_freq"])) + bird["wave_offset"]) * 2
+                bird["y"] += bob
+
+                # Clamp to screen
+                bird["y"] = max(bird["radius"], min(HEIGHT - bird["radius"], bird["y"]))
+
+                if slam_state == 'closed':
+                    in_pipe_x = pipe_x - bird["radius"] < bird["x"] < pipe_x + PIPE_WIDTH + bird["radius"]
+                    out_pipe_y = bird["y"] < pipe_center_y - bird["radius"] or bird["y"] > pipe_center_y + bird["radius"]
+                    if in_pipe_x and out_pipe_y:
+                        bird["squished"] = True
+                        bird["squish_timer"] = 10
+                        score += bird["score"]
+                        spawn_blood(bird["x"], bird["y"], bird["color"])
+
+                if bird["x"] - bird["radius"] > WIDTH:
+                    game_over = True
+
+            if bird["squished"]:
+                bird["squish_timer"] -= 1
+                if bird["squish_timer"] <= 0:
+                    bird["alive"] = False
+
+        birds = [b for b in birds if b["alive"] or b["squished"]]
+
+        # Update blood particles
+        for p in particles:
+            p["x"] += p["vx"]
+            p["y"] += p["vy"]
+            p["life"] -= 1
+        particles = [p for p in particles if p["life"] > 0]
+
+    # Draw blood particles
+    for p in particles:
+        pygame.draw.circle(screen, p["color"], (int(p["x"]), int(p["y"])), 3)
+
+    # Draw birds
+    for bird in birds:
+        if not bird["alive"]:
+            continue
+        if bird["squished"]:
+            pygame.draw.ellipse(screen, bird["color"], (bird["x"] - bird["radius"], bird["y"] - 5, bird["radius"] * 2, 10))
+        else:
+            pygame.draw.circle(screen, bird["color"], (int(bird["x"]), int(bird["y"])), bird["radius"])
+
+    # Draw pipes
+    top_h = pipe_center_y - pipe_gap // 2
+    bottom_y = pipe_center_y + pipe_gap // 2
+    draw_flappy_pipe(pipe_x, top_h, bottom_y)
+
+    # Score
+    screen.blit(FONT.render(f"Score: {score}", True, (255, 255, 255)), (10, 10))
+
+    if game_over:
+        over = FONT.render("Game Over! Press R to Restart", True, (255, 255, 255))
+        screen.blit(over, over.get_rect(center=(WIDTH // 2, HEIGHT // 2)))
+
+    pygame.display.flip()
+    clock.tick(60)
+
+pygame.quit()
+sys.exit()
